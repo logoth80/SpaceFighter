@@ -12,7 +12,7 @@ BLACK = (0, 0, 0)
 
 # Setup screen
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-pygame.display.set_caption("Zybex Type Game")
+pygame.display.set_caption("SpaceFighter")
 clock = pygame.time.Clock()
 
 scroll_speed = 1
@@ -82,9 +82,10 @@ class Bullet:
 # Meteor class
 class Meteor:
     def __init__(self, x, y):
-        self.image = pygame.Surface((40, 40))
+        self.image = pygame.Surface((60, 60))
         self.image.fill((128, 128, 128))
         self.rect = self.image.get_rect(center=(x, y))
+        self.hitpoints = 10
 
     def update(self):
         self.rect.x -= scroll_speed
@@ -104,14 +105,16 @@ class Enemy:
         self.type = enemy_type
         self.weapon = weapon
         self.potential_drop = potential_drop
+        self.last_shot = pygame.time.get_ticks()
 
     def update(self):
         self.rect.x -= scroll_speed
         return self.rect.right > 0
 
     def shoot(self, enemy_bullets):
-        if pygame.time.get_ticks() % 100 == 0:
-            enemy_bullets.append(EnemyBullet(self.rect.centerx, self.rect.bottom))
+        if random.randint(1, 10 * FPS) == 7 and self.last_shot + 3 * FPS < pygame.time.get_ticks():
+            enemy_bullets.append(EnemyBullet(self.rect.left, self.rect.centery))
+            self.last_shot = pygame.time.get_ticks()
 
     def draw(self):
         screen.blit(self.image, self.rect)
@@ -120,10 +123,10 @@ class Enemy:
 # EnemyBullet class
 class EnemyBullet:
     def __init__(self, x, y):
-        self.image = pygame.Surface((10, 5))
+        self.image = pygame.Surface((10, 10))
         self.image.fill((255, 0, 255))
         self.rect = self.image.get_rect(center=(x, y))
-        self.speed = 5
+        self.speed = 9
 
     def update(self):
         self.rect.x -= self.speed
@@ -217,6 +220,7 @@ while running:
 
     # Update bullets
     bullets = [b for b in bullets if b.update()]
+    enemy_bullets = [eb for eb in enemy_bullets if eb.update()]
 
     # Spawn meteors and enemies
     spawner.spawn(meteors, enemies)
@@ -234,6 +238,12 @@ while running:
                 if enemy.hitpoints <= 0:
                     enemies.remove(enemy)
                     score += 100
+        for meteor in meteors[:]:
+            if bullet.rect.colliderect(meteor.rect):
+                meteor.hitpoints -= 1
+                bullets.remove(bullet)
+                if meteor.hitpoints <= 0:
+                    meteors.remove(meteor)
 
     for meteor in meteors[:]:
         if spaceship.rect.colliderect(meteor.rect):
@@ -251,7 +261,7 @@ while running:
         if spaceship.rect.colliderect(enemy_bullet.rect):
             spaceship.lives -= 1
             spaceship.respawn()
-            enemy_bullets.remove(enemy_bullet)
+            # enemy_bullets.remove(enemy_bullet)
 
     # Draw everything
     spaceship.draw()
@@ -261,6 +271,9 @@ while running:
         m.draw()
     for e in enemies:
         e.draw()
+        e.shoot(enemy_bullets)
+    for eb in enemy_bullets:
+        eb.draw()
 
     score_text = ui_font.render("Score: " + str(score), True, WHITE)
     screen.blit(score_text, (10, SCREEN_HEIGHT - score_text.get_height() - 2))
