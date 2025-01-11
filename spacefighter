@@ -15,7 +15,7 @@ screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption("SpaceFighter")
 clock = pygame.time.Clock()
 
-scroll_speed = 1
+scroll_speed = 0.5
 score = 0
 ui_font = pygame.font.SysFont("Arial", 32)
 
@@ -25,6 +25,7 @@ class Spaceship:
     def __init__(self):
         self.image = pygame.Surface((50, 30))
         self.image.fill((0, 255, 0))
+
         self.rect = self.image.get_rect(center=(100, SCREEN_HEIGHT // 2))
         self.lives = 3
         self.energy = 100
@@ -82,13 +83,15 @@ class Bullet:
 # Meteor class
 class Meteor:
     def __init__(self, x, y):
+        self.posx = x
         self.image = pygame.Surface((60, 60))
         self.image.fill((128, 128, 128))
         self.rect = self.image.get_rect(center=(x, y))
         self.hitpoints = 10
 
     def update(self):
-        self.rect.x -= scroll_speed
+        self.posx -= scroll_speed
+        self.rect.x = int(self.posx)
         return self.rect.right > 0
 
     def draw(self):
@@ -98,9 +101,11 @@ class Meteor:
 # Enemy class
 class Enemy:
     def __init__(self, x, y, hitpoints, enemy_type, weapon, potential_drop):
+        self.posx = x
+        self.posy = y
         self.image = pygame.Surface((50, 30))
         self.image.fill((255, 0, 0))
-        self.rect = self.image.get_rect(center=(x, y))
+        self.rect = self.image.get_rect(center=(int(x), int(y)))
         self.hitpoints = hitpoints
         self.type = enemy_type
         self.weapon = weapon
@@ -108,7 +113,8 @@ class Enemy:
         self.last_shot = pygame.time.get_ticks()
 
     def update(self):
-        self.rect.x -= scroll_speed
+        self.posx -= scroll_speed
+        self.rect.x = int(self.posx)
         return self.rect.right > 0
 
     def shoot(self, enemy_bullets):
