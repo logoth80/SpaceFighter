@@ -1,0 +1,274 @@
+import pygame
+import random
+
+# Initialize Pygame
+pygame.init()
+
+# Constants
+SCREEN_WIDTH, SCREEN_HEIGHT = 800, 600
+FPS = 60
+WHITE = (255, 255, 255)
+BLACK = (0, 0, 0)
+
+# Setup screen
+screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+pygame.display.set_caption("Zybex Type Game")
+clock = pygame.time.Clock()
+
+scroll_speed = 1
+score = 0
+ui_font = pygame.font.SysFont("Arial", 32)
+
+
+# Spaceship class
+class Spaceship:
+    def __init__(self):
+        self.image = pygame.Surface((50, 30))
+        self.image.fill((0, 255, 0))
+        self.rect = self.image.get_rect(center=(100, SCREEN_HEIGHT // 2))
+        self.lives = 3
+        self.energy = 100
+        self.weapon_level = 1
+        self.shot_delay = 500
+        self.last_shot = 0
+
+    def move(self, keys):
+        if keys[pygame.K_w] and self.rect.top > 0:
+            self.rect.y -= 5
+        if keys[pygame.K_s] and self.rect.bottom < SCREEN_HEIGHT:
+            self.rect.y += 5
+        if keys[pygame.K_a] and self.rect.left > 0:
+            self.rect.x -= 5
+        if keys[pygame.K_d] and self.rect.right < SCREEN_WIDTH:
+            self.rect.x += 5
+        if self.rect.center[0] - 5 <= pygame.mouse.get_pos()[0]:
+            self.rect.x += 5
+        if self.rect.center[0] + 5 >= pygame.mouse.get_pos()[0]:
+            self.rect.x -= 5
+        if self.rect.center[1] - 5 <= pygame.mouse.get_pos()[1]:
+            self.rect.y += 5
+        if self.rect.center[1] + 5 >= pygame.mouse.get_pos()[1]:
+            self.rect.y -= 5
+
+    def shoot(self, bullets):
+        if pygame.time.get_ticks() > self.last_shot + self.shot_delay:
+            self.last_shot = pygame.time.get_ticks()  # % (FPS // self.weapon_level) == 0:
+            bullets.append(Bullet(self.rect.centerx, self.rect.centery))
+
+    def respawn(self):
+        self.rect.center = (100, SCREEN_HEIGHT // 2)
+        self.weapon_level = max(1, self.weapon_level - 1)
+
+    def draw(self):
+        screen.blit(self.image, self.rect)
+
+
+# Bullet class
+class Bullet:
+    def __init__(self, x, y):
+        self.image = pygame.Surface((10, 10))
+        self.image.fill((255, 255, 0))
+        self.rect = self.image.get_rect(center=(x, y))
+        self.speed = 10
+
+    def update(self):
+        self.rect.x += self.speed
+        return self.rect.right > 0
+
+    def draw(self):
+        screen.blit(self.image, self.rect)
+
+
+# Meteor class
+class Meteor:
+    def __init__(self, x, y):
+        self.image = pygame.Surface((40, 40))
+        self.image.fill((128, 128, 128))
+        self.rect = self.image.get_rect(center=(x, y))
+
+    def update(self):
+        self.rect.x -= scroll_speed
+        return self.rect.right > 0
+
+    def draw(self):
+        screen.blit(self.image, self.rect)
+
+
+# Enemy class
+class Enemy:
+    def __init__(self, x, y, hitpoints, enemy_type, weapon, potential_drop):
+        self.image = pygame.Surface((50, 30))
+        self.image.fill((255, 0, 0))
+        self.rect = self.image.get_rect(center=(x, y))
+        self.hitpoints = hitpoints
+        self.type = enemy_type
+        self.weapon = weapon
+        self.potential_drop = potential_drop
+
+    def update(self):
+        self.rect.x -= scroll_speed
+        return self.rect.right > 0
+
+    def shoot(self, enemy_bullets):
+        if pygame.time.get_ticks() % 100 == 0:
+            enemy_bullets.append(EnemyBullet(self.rect.centerx, self.rect.bottom))
+
+    def draw(self):
+        screen.blit(self.image, self.rect)
+
+
+# EnemyBullet class
+class EnemyBullet:
+    def __init__(self, x, y):
+        self.image = pygame.Surface((10, 5))
+        self.image.fill((255, 0, 255))
+        self.rect = self.image.get_rect(center=(x, y))
+        self.speed = 5
+
+    def update(self):
+        self.rect.x -= self.speed
+        return self.rect.left > 0
+
+    def draw(self):
+        screen.blit(self.image, self.rect)
+
+
+# Bonus class
+class Bonus:
+    def __init__(self, x, y, bonus_type):
+        self.image = pygame.Surface((20, 20))
+        self.image.fill((0, 0, 255))
+        self.rect = self.image.get_rect(center=(x, y))
+        self.bonus_type = bonus_type
+
+    def update(self):
+        self.rect.x -= 5
+        return self.rect.right > 0
+
+    def draw(self):
+        screen.blit(self.image, self.rect)
+
+
+# Spawner class
+class Spawner:
+    def __init__(self, meteor_list, enemy_list):
+        self.meteor_list = meteor_list
+        self.enemy_list = enemy_list
+        self.last_spawn_time = 0
+
+    def spawn(self, meteors, enemies):
+        current_time = pygame.time.get_ticks()
+        # Spawn meteors
+        for m in self.meteor_list:
+            if current_time >= m["t"]:
+                meteors.append(Meteor(SCREEN_WIDTH, m["y"] * SCREEN_HEIGHT / 100))
+                self.meteor_list.remove(m)
+        # Spawn enemies
+        for e in self.enemy_list:
+            if current_time >= e["t"]:
+                enemies.append(
+                    Enemy(SCREEN_WIDTH, e["y"] * SCREEN_HEIGHT / 100, e["hp"], e["k"], e["w"], e["b"])
+                )  # Time, Y-position, HP, Kind, Weapon, Bonus
+
+                self.enemy_list.remove(e)
+
+
+# Main game loop
+spaceship = Spaceship()
+bullets = []
+meteors = []
+enemies = []
+enemy_bullets = []
+bonuses = []
+
+meteor_list = [{"t": 2000, "y": random.randint(5, 90)}]
+enemy_list = []
+
+# Create 5 waves of enemies
+for wave in range(5):
+    start_time = 5000 + wave * 15000  # Each wave starts 10 seconds apart
+    for i in range(5):  # 5 enemies per wave
+        enemy_list.append(
+            {
+                "t": start_time + i * 1000,  # Spawn each enemy 1 second apart
+                "y": random.randint(1, 18) * 5,
+                "hp": 3,
+                "k": 1,
+                "w": 1,
+                "b": None,
+            }
+        )
+
+
+spawner = Spawner(meteor_list, enemy_list)
+
+running = True
+while running:
+    screen.fill(BLACK)
+    keys = pygame.key.get_pressed()
+
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+
+    # Update spaceship
+    spaceship.move(keys)
+    spaceship.shoot(bullets)
+
+    # Update bullets
+    bullets = [b for b in bullets if b.update()]
+
+    # Spawn meteors and enemies
+    spawner.spawn(meteors, enemies)
+
+    # Update meteors and enemies
+    meteors = [m for m in meteors if m.update()]
+    enemies = [e for e in enemies if e.update()]
+
+    # Check collisions
+    for bullet in bullets[:]:
+        for enemy in enemies[:]:
+            if bullet.rect.colliderect(enemy.rect):
+                enemy.hitpoints -= 1
+                bullets.remove(bullet)
+                if enemy.hitpoints <= 0:
+                    enemies.remove(enemy)
+                    score += 100
+
+    for meteor in meteors[:]:
+        if spaceship.rect.colliderect(meteor.rect):
+            spaceship.lives -= 1
+            spaceship.respawn()
+            meteors.remove(meteor)
+
+    for enemy in enemies[:]:
+        if spaceship.rect.colliderect(enemy.rect):
+            spaceship.lives -= 1
+            spaceship.respawn()
+            enemies.remove(enemy)
+
+    for enemy_bullet in enemy_bullets[:]:
+        if spaceship.rect.colliderect(enemy_bullet.rect):
+            spaceship.lives -= 1
+            spaceship.respawn()
+            enemy_bullets.remove(enemy_bullet)
+
+    # Draw everything
+    spaceship.draw()
+    for b in bullets:
+        b.draw()
+    for m in meteors:
+        m.draw()
+    for e in enemies:
+        e.draw()
+
+    score_text = ui_font.render("Score: " + str(score), True, WHITE)
+    screen.blit(score_text, (10, SCREEN_HEIGHT - score_text.get_height() - 2))
+    lives_text = ui_font.render("Lives: " + str(spaceship.lives), True, WHITE)
+    screen.blit(lives_text, (SCREEN_WIDTH - lives_text.get_width() - 10, SCREEN_HEIGHT - score_text.get_height() - 2))
+
+    # Display update
+    pygame.display.flip()
+    clock.tick(FPS)
+
+pygame.quit()
