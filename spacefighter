@@ -5,7 +5,7 @@ import random
 pygame.init()
 
 # Constants
-SCREEN_WIDTH, SCREEN_HEIGHT = 800, 600
+SCREEN_WIDTH, SCREEN_HEIGHT = 960, 512
 FPS = 60
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
@@ -23,7 +23,7 @@ ui_font = pygame.font.SysFont("Arial", 32)
 # Spaceship class
 class Spaceship:
     def __init__(self):
-        self.image = pygame.Surface((50, 30))
+        self.image = pygame.Surface((50, 50))
         self.image.fill((0, 255, 0))
 
         self.rect = self.image.get_rect(center=(100, SCREEN_HEIGHT // 2))
@@ -52,6 +52,7 @@ class Spaceship:
             self.rect.y -= 5
 
     def shoot(self, bullets):
+        self.shot_delay = 800 - 60 * self.weapon_level
         if pygame.time.get_ticks() > self.last_shot + self.shot_delay:
             self.last_shot = pygame.time.get_ticks()  # % (FPS // self.weapon_level) == 0:
             bullets.append(Bullet(self.rect.centerx, self.rect.centery))
@@ -136,7 +137,7 @@ class EnemyBullet:
         self.image = pygame.Surface((10, 10))
         self.image.fill((255, 0, 255))
         self.rect = self.image.get_rect(center=(x, y))
-        self.speed = 9
+        self.speed = 3
 
     def update(self):
         self.rect.x -= self.speed
@@ -228,6 +229,9 @@ while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_ESCAPE:
+                running = False
 
     # Update spaceship
     spaceship.move(keys)
@@ -280,7 +284,12 @@ while running:
         if spaceship.rect.colliderect(enemy_bullet.rect):
             spaceship.lives -= 1
             spaceship.respawn()
-            # enemy_bullets.remove(enemy_bullet)
+
+    for bonus in bonuses[:]:
+        if spaceship.rect.colliderect(bonus.rect):
+            if bonus.bonus_type == 1:
+                spaceship.weapon_level = min(spaceship.weapon_level + 1, 10)
+            bonuses.remove(bonus)
 
     # Draw everything
     spaceship.draw()
