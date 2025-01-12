@@ -1,5 +1,6 @@
 import pygame
 import random
+import math
 
 # Initialize Pygame
 pygame.init()
@@ -23,8 +24,12 @@ ui_font = pygame.font.SysFont("Arial", 32)
 # Spaceship class
 class Spaceship:
     def __init__(self):
-        self.image = pygame.Surface((50, 50))
-        self.image.fill((0, 255, 0))
+        self.image = pygame.Surface((50, 40))
+        self.image.fill((0, 0, 0))
+        self.shoot_sound = pygame.mixer.Sound("laser.mp3")
+        self.shoot_sound.set_volume(0.3)
+        self.invulnerable = True
+        self.spawnedat = pygame.time.get_ticks()
 
         self.rect = self.image.get_rect(center=(100, SCREEN_HEIGHT // 2))
         self.lives = 3
@@ -32,6 +37,14 @@ class Spaceship:
         self.weapon_level = 1
         self.shot_delay = 500
         self.last_shot = 0
+        self.spaceship_pics = []
+        self.spaceship_pics.append(pygame.image.load("ship1.png").convert_alpha())
+        self.spaceship_pics.append(pygame.image.load("ship2.png").convert_alpha())
+        self.spaceship_pics.append(pygame.image.load("ship3.png").convert_alpha())
+        self.spaceship_pics.append(pygame.image.load("ship4.png").convert_alpha())
+        self.spaceship_pics.append(pygame.image.load("ship5.png").convert_alpha())
+        for i in range(5):
+            self.spaceship_pics[i] = pygame.transform.scale(self.spaceship_pics[i], (60, 60))
 
     def move(self, keys):
         if keys[pygame.K_w] and self.rect.top > 0:
@@ -56,22 +69,33 @@ class Spaceship:
         if pygame.time.get_ticks() > self.last_shot + self.shot_delay:
             self.last_shot = pygame.time.get_ticks()  # % (FPS // self.weapon_level) == 0:
             bullets.append(Bullet(self.rect.centerx, self.rect.centery))
+            self.shoot_sound.play()
+        if self.invulnerable and pygame.time.get_ticks() > self.spawnedat + 5000:
+            self.invulnerable = False
 
     def respawn(self):
         self.rect.center = (100, SCREEN_HEIGHT // 2)
         self.weapon_level = max(1, self.weapon_level - 1)
+        self.spawnedat = pygame.time.get_ticks()
+        self.invulnerable = True
 
     def draw(self):
         screen.blit(self.image, self.rect)
+        i = int(pygame.time.get_ticks() / 20) % 5
+        screen.blit(self.spaceship_pics[i], (self.rect.left, self.rect.top - 9))
+        if self.invulnerable:
+            pygame.draw.circle(screen, (70, 70, 250), self.rect.center, 40, 5)
 
 
 # Bullet class
 class Bullet:
     def __init__(self, x, y):
-        self.image = pygame.Surface((10, 10))
+        self.image = pygame.Surface((20, 25))
         self.image.fill((255, 255, 0))
         self.rect = self.image.get_rect(center=(x, y))
         self.speed = 10
+        self.image = pygame.image.load("bullet.png").convert_alpha()
+        self.image = pygame.transform.scale(self.image, (25, 25))
 
     def update(self):
         self.rect.x += self.speed
@@ -88,15 +112,30 @@ class Meteor:
         self.image = pygame.Surface((60, 60))
         self.image.fill((128, 128, 128))
         self.rect = self.image.get_rect(center=(x, y))
-        self.hitpoints = 10
+        self.maxhp = 10
+        self.hitpoints = self.maxhp
+        self.image = pygame.image.load("rock.png").convert_alpha()
+        self.image = pygame.transform.scale(self.image, (55, 50))
+        self.image = pygame.transform.rotate(self.image, random.randint(0, 359))
+        self.rect = self.image.get_rect(center=(x, y))
+        self.rect2 = self.image.get_rect(center=(x, y))
+        self.rect.y += 10
+        self.rect.width -= 30
+        self.rect.height -= 20
 
     def update(self):
         self.posx -= scroll_speed
-        self.rect.x = int(self.posx)
+        self.rect.x = int(self.posx + 10)
+        self.rect2.x = int(self.posx)
         return self.rect.right > 0
 
+    def hit(self, hit):
+        self.hitpoints -= hit
+        alpha = int(125 + 130 * self.hitpoints / self.maxhp)
+        self.image.set_alpha(alpha)
+
     def draw(self):
-        screen.blit(self.image, self.rect)
+        screen.blit(self.image, self.rect2)
 
 
 # Enemy class
@@ -112,6 +151,7 @@ class Enemy:
         self.weapon = weapon
         self.potential_drop = potential_drop
         self.last_shot = pygame.time.get_ticks()
+        self.explosion_sound = pygame.mixer.Sound("pop.wav")
 
     def update(self):
         self.posx -= scroll_speed
@@ -128,16 +168,20 @@ class Enemy:
 
     def destroy(self):
         if self.potential_drop is not None:
-            bonuses.append(Bonus(self.rect.centerx, self.rect.centery, bonus_type=1))
+            bonuses.append(Bonus(self.rect.centerx, self.rect.centery, bonus_type=self.potential_drop))
+        self.explosion_sound.play()
 
 
 # EnemyBullet class
 class EnemyBullet:
     def __init__(self, x, y):
-        self.image = pygame.Surface((10, 10))
+        self.image = pygame.Surface((20, 20))
         self.image.fill((255, 0, 255))
         self.rect = self.image.get_rect(center=(x, y))
         self.speed = 3
+        self.image = pygame.image.load("enemy_bullet.png").convert_alpha()
+
+        self.image = pygame.transform.scale(self.image, (20, 20))
 
     def update(self):
         self.rect.x -= self.speed
@@ -150,20 +194,59 @@ class EnemyBullet:
 # Bonus class
 class Bonus:
     def __init__(self, x, y, bonus_type):
-        self.image = pygame.Surface((20, 20))
+        self.image = pygame.Surface((40, 40))
         self.image.fill((0, 0, 255))
         self.rect = self.image.get_rect(center=(x, y))
         self.bonus_type = bonus_type
+        print(self.bonus_type)
         self.spawn_time = pygame.time.get_ticks()
-        self.timetolive = 5000
+        self.timetolive = 10000
         self.killtime = self.spawn_time + self.timetolive
+        self.posx = x
+        if bonus_type == "weapon":
+            self.r = 150
+            self.g = 150
+            self.b = 150
+        elif bonus_type == "life":
+            self.r = 0
+            self.g = 255
+            self.b = 0
+        elif bonus_type == "invulnerability":
+            self.r = 0
+            self.g = 0
+            self.b = 255
+        elif bonus_type == "speedup":
+            self.r = 255
+            self.g = 255
+            self.b = 0
+        else:
+            self.r = 255
+            self.g = 255
+            self.b = 255
+        self.rtemp = self.r
+        self.gtemp = self.g
+        self.btemp = self.b
+        self.dim = 1.0
 
     def update(self):
-        self.rect.x -= 0
+        self.posx -= scroll_speed
+        self.rect.x = self.posx
+        if self.rect.right < 0:
+            bonuses.remove(self)
+
         return self.rect.right > 0
 
     def draw(self):
-        pygame.draw.circle(screen, (255, 255, 0), self.rect.center, 20)
+        t = 1.0
+        dim = 1
+        if self.killtime - pygame.time.get_ticks() < 2000:
+            t = self.killtime - pygame.time.get_ticks() / 400
+            dim = max((self.killtime - pygame.time.get_ticks()) / 2000, 0.3)
+            self.rtemp = int(self.r * max(0.3, abs(math.sin(t))) * dim)
+            self.gtemp = int(self.g * max(0.3, abs(math.sin(t))) * dim)
+            self.btemp = int(self.b * max(0.3, abs(math.sin(t))) * dim)
+        self.color = (self.rtemp, self.gtemp, self.btemp)
+        pygame.draw.circle(screen, self.color, self.rect.center, 20)
 
         # screen.blit(self.image, self.rect)
 
@@ -199,22 +282,31 @@ meteors = []
 enemies = []
 enemy_bullets = []
 bonuses = []
+meteor_list = []
+for i in range(555):
+    meteor_list.append({"t": 2000 + i * 5000, "y": random.randint(0, 19) * 5})
 
-meteor_list = [{"t": 2000, "y": random.randint(5, 90)}]
+# meteor_list = [{"t": 2000, "y": random.randint(5, 90)}]
+
 enemy_list = []
 
 # Create 5 waves of enemies
-for wave in range(5):
-    start_time = 5000 + wave * 15000  # Each wave starts 10 seconds apart
+for wave in range(500):
+    start_time = 5000 + wave * 25000  # Each wave starts 10 seconds apart
     for i in range(5):  # 5 enemies per wave
+        if random.random() >= 0.5:
+            kind = None
+            print("none")
+        else:
+            kind = random.choice(["weapon", "life", "invulnerability"])
         enemy_list.append(
             {
-                "t": start_time + i * 1000,  # Spawn each enemy 1 second apart
+                "t": start_time + i * 1500,  # Spawn each enemy 1 second apart
                 "y": random.randint(1, 18) * 5,
                 "hp": 3,
                 "k": 1,
                 "w": 1,
-                "b": 1,
+                "b": kind,
             }
         )
 
@@ -223,7 +315,6 @@ spawner = Spawner(meteor_list, enemy_list)
 
 running = True
 while running:
-    screen.fill(BLACK)
     keys = pygame.key.get_pressed()
 
     for event in pygame.event.get():
@@ -263,35 +354,45 @@ while running:
                     score += 100
         for meteor in meteors[:]:
             if bullet.rect.colliderect(meteor.rect):
-                meteor.hitpoints -= 1
-                bullets.remove(bullet)
+                meteor.hit(1)
+                if bullet in bullets:
+                    bullets.remove(bullet)
                 if meteor.hitpoints <= 0:
                     meteors.remove(meteor)
 
     for meteor in meteors[:]:
-        if spaceship.rect.colliderect(meteor.rect):
+        if spaceship.rect.colliderect(meteor.rect) and not spaceship.invulnerable:
             spaceship.lives -= 1
             spaceship.respawn()
-            meteors.remove(meteor)
+            meteor.hit(5)
+            if meteor.hitpoints <= 0:
+                meteors.remove(meteor)
 
     for enemy in enemies[:]:
-        if spaceship.rect.colliderect(enemy.rect):
+        if spaceship.rect.colliderect(enemy.rect) and not spaceship.invulnerable:
             spaceship.lives -= 1
             spaceship.respawn()
             enemies.remove(enemy)
 
     for enemy_bullet in enemy_bullets[:]:
-        if spaceship.rect.colliderect(enemy_bullet.rect):
+        if spaceship.rect.colliderect(enemy_bullet.rect) and not spaceship.invulnerable:
             spaceship.lives -= 1
             spaceship.respawn()
 
     for bonus in bonuses[:]:
         if spaceship.rect.colliderect(bonus.rect):
-            if bonus.bonus_type == 1:
+            if bonus.bonus_type == "weapon":
                 spaceship.weapon_level = min(spaceship.weapon_level + 1, 10)
+            elif bonus.bonus_type == "life":
+                spaceship.lives += 1
+            elif bonus.bonus_type == "invulnerability":
+                spaceship.invulnerable = True
+                spaceship.spawnedat = pygame.time.get_ticks()
+
             bonuses.remove(bonus)
 
     # Draw everything
+    screen.fill(BLACK)
     spaceship.draw()
     for b in bullets:
         b.draw()
