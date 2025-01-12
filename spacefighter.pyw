@@ -15,6 +15,8 @@ BLACK = (0, 0, 0)
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption("SpaceFighter")
 clock = pygame.time.Clock()
+bg_nebula = pygame.image.load("nebula.jpg").convert()
+bg_nebula = pygame.transform.scale(bg_nebula, (SCREEN_WIDTH * 1.5, SCREEN_HEIGHT * 1.5))
 
 scroll_speed = 0.7
 score = 0
@@ -85,7 +87,6 @@ class Spaceship:
         self.invulnerable = True
 
     def draw(self):
-        screen.blit(self.image, self.rect)
         i = int(pygame.time.get_ticks() / 20) % 5
         screen.blit(self.spaceship_pics[i], (self.rect.left, self.rect.top - 9))
         if self.invulnerable:
@@ -203,7 +204,6 @@ class Bonus:
         self.image.fill((0, 0, 255))
         self.rect = self.image.get_rect(center=(x, y))
         self.bonus_type = bonus_type
-        print(self.bonus_type)
         self.spawn_time = pygame.time.get_ticks()
         self.timetolive = 10000
         self.killtime = self.spawn_time + self.timetolive
@@ -256,6 +256,27 @@ class Bonus:
         # screen.blit(self.image, self.rect)
 
 
+# background stars class
+class Star:
+    def __init__(self):
+        self.size = random.randint(1, 2)
+        self.color = (255 - self.size * 50, 255 - self.size * 50, 255 - self.size * 50)
+        self.x = random.randint(0, SCREEN_WIDTH + 3)
+        self.y = random.randint(-2, SCREEN_HEIGHT + 2)
+        self.image = pygame.draw.circle(screen, self.color, (self.x, self.y), self.size)
+
+    def update(self):
+        self.x -= scroll_speed / 3
+        if self.x <= -4:
+            self.x = SCREEN_WIDTH + 3
+            self.y = random.randint(-2, SCREEN_HEIGHT + 2)
+        return True
+
+    def draw(self):
+        pygame.draw.circle(screen, self.color, (self.x, self.y), self.size)
+        return True
+
+
 # Spawner class
 class Spawner:
     def __init__(self, meteor_list, enemy_list):
@@ -287,6 +308,7 @@ meteors = []
 enemies = []
 enemy_bullets = []
 bonuses = []
+backgroundstars = []
 meteor_list = []
 for i in range(555):
     meteor_list.append({"t": 2000 + i * 5000, "y": random.randint(0, 19) * 5})
@@ -301,7 +323,6 @@ for wave in range(500):
     for i in range(5):  # 5 enemies per wave
         if random.random() >= 0.5:
             kind = None
-            print("none")
         else:
             kind = random.choice(["weapon", "life", "invulnerability"])
         enemy_list.append(
@@ -317,6 +338,9 @@ for wave in range(500):
 
 
 spawner = Spawner(meteor_list, enemy_list)
+
+for i in range(300):
+    backgroundstars.append(Star())
 
 running = True
 while running:
@@ -346,6 +370,9 @@ while running:
     # Update meteors and enemies
     meteors = [m for m in meteors if m.update()]
     enemies = [e for e in enemies if e.update()]
+
+    # update/draw stars
+    backgroundstars = [s for s in backgroundstars if s.update()]
 
     # update bonnuses
     bonuses = [bo for bo in bonuses if bo.update()]
@@ -401,6 +428,9 @@ while running:
 
     # Draw everything
     screen.fill(BLACK)
+    screen.blit(bg_nebula, (0, 0))
+    for bs in backgroundstars:
+        bs.draw()
     spaceship.draw()
     for b in bullets:
         b.draw()
