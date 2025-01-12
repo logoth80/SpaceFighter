@@ -7,7 +7,7 @@ pygame.init()
 
 # Constants
 SCREEN_WIDTH, SCREEN_HEIGHT = 960, 512
-FPS = 60
+FPS = 100
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 
@@ -30,7 +30,7 @@ class Spaceship:
         self.shoot_sound.set_volume(0.3)
         self.invulnerable = True
         self.spawnedat = pygame.time.get_ticks()
-
+        self.everysecond = True
         self.rect = self.image.get_rect(center=(100, SCREEN_HEIGHT // 2))
         self.lives = 3
         self.energy = 100
@@ -67,7 +67,12 @@ class Spaceship:
     def shoot(self, bullets):
         self.shot_delay = 800 - 60 * self.weapon_level
         if pygame.time.get_ticks() > self.last_shot + self.shot_delay:
-            self.last_shot = pygame.time.get_ticks()  # % (FPS // self.weapon_level) == 0:
+            if not self.everysecond:
+                self.last_shot = pygame.time.get_ticks()
+            else:
+                self.last_shot = pygame.time.get_ticks() - 500 + self.weapon_level * 40
+            self.everysecond = not self.everysecond
+
             bullets.append(Bullet(self.rect.centerx, self.rect.centery))
             self.shoot_sound.play()
         if self.invulnerable and pygame.time.get_ticks() > self.spawnedat + 5000:
@@ -159,7 +164,7 @@ class Enemy:
         return self.rect.right > 0
 
     def shoot(self, enemy_bullets):
-        if random.randint(1, 10 * FPS) == 7 and self.last_shot + 3 * FPS < pygame.time.get_ticks():
+        if random.randint(1, 600) == 7 and self.last_shot + 300 < pygame.time.get_ticks():
             enemy_bullets.append(EnemyBullet(self.rect.left, self.rect.centery))
             self.last_shot = pygame.time.get_ticks()
 
@@ -323,6 +328,9 @@ while running:
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
                 running = False
+            elif event.key == pygame.K_SPACE:
+                if spaceship.weapon_level < 10:
+                    spaceship.weapon_level += 1
 
     # Update spaceship
     spaceship.move(keys)
