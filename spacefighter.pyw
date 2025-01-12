@@ -10,6 +10,7 @@ SCREEN_WIDTH, SCREEN_HEIGHT = 960, 512
 FPS = 100
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
+VOID_BLACK = (5, 0, 25)
 
 # Setup screen
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
@@ -427,8 +428,10 @@ while running:
             bonuses.remove(bonus)
 
     # Draw everything
-    screen.fill(BLACK)
-    screen.blit(bg_nebula, (0, 0))
+    screen.fill(VOID_BLACK)
+
+    # screen.blit(bg_nebula, (0 - int(spaceship.rect.centerx / 3), 0 - int(spaceship.rect.centery / 3)))
+
     for bs in backgroundstars:
         bs.draw()
     spaceship.draw()
