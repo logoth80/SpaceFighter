@@ -159,10 +159,25 @@ class Enemy:
         self.potential_drop = potential_drop
         self.last_shot = pygame.time.get_ticks()
         self.explosion_sound = pygame.mixer.Sound("pop.wav")
+        if enemy_type == 1:
+            self.image = pygame.image.load("enemy1.png")
+        elif enemy_type == 2:
+            self.image = pygame.image.load("enemy2.png")
+            self.image.convert_alpha()
+            self.image = pygame.transform.scale(self.image, (80, 80))
+            self.image = pygame.transform.rotate(self.image, random.randint(0, 359))
+
+            self.rect = self.image.get_rect(center=(int(x), int(y)))
+            self.rect.width = 70
+            self.rect.height = 80
+        else:
+            self.image = pygame.image.load("enemy3.png")
 
     def update(self):
         self.posx -= scroll_speed
         self.rect.x = int(self.posx)
+        self.rect.y = int(self.posy)
+
         return self.rect.right > 0
 
     def shoot(self, enemy_bullets):
@@ -331,7 +346,7 @@ for wave in range(500):
                 "t": start_time + i * 1500,  # Spawn each enemy 1 second apart
                 "y": random.randint(1, 18) * 5,
                 "hp": 3,
-                "k": 1,
+                "k": 2,
                 "w": 1,
                 "b": kind,
             }
