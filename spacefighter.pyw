@@ -161,15 +161,28 @@ class Enemy:
         self.explosion_sound = pygame.mixer.Sound("pop.wav")
         if enemy_type == 1:
             self.image = pygame.image.load("enemy1.png")
+            self.image.convert_alpha()
+            self.image = pygame.transform.scale(self.image, (60, 60))
+            self.image = pygame.transform.rotate(self.image, random.randint(0, 359))
+            self.rect = self.image.get_rect(center=(int(x), int(y)))
         elif enemy_type == 2:
             self.image = pygame.image.load("enemy2.png")
             self.image.convert_alpha()
             self.image = pygame.transform.scale(self.image, (80, 80))
             self.image = pygame.transform.rotate(self.image, random.randint(0, 359))
-
             self.rect = self.image.get_rect(center=(int(x), int(y)))
             self.rect.width = 70
             self.rect.height = 80
+        elif enemy_type == 3:
+            self.image = pygame.image.load("enemy3.png")
+            self.image.convert_alpha()
+            self.image = pygame.transform.scale(self.image, (75, 60))
+            self.rect = self.image.get_rect(center=(int(x), int(y)))
+        elif enemy_type == 4:
+            self.image = pygame.image.load("enemy4.png")
+            self.image.convert_alpha()
+            self.image = pygame.transform.scale(self.image, (60, 80))
+            self.rect = self.image.get_rect(center=(int(x), int(y)))
         else:
             self.image = pygame.image.load("enemy3.png")
 
@@ -329,13 +342,12 @@ meteor_list = []
 for i in range(555):
     meteor_list.append({"t": 2000 + i * 5000, "y": random.randint(0, 19) * 5})
 
-# meteor_list = [{"t": 2000, "y": random.randint(5, 90)}]
-
 enemy_list = []
 
-# Create 5 waves of enemies
+# Create waves of enemies
 for wave in range(500):
     start_time = 5000 + wave * 25000  # Each wave starts 10 seconds apart
+    enemy_type_in_wave = random.randint(1, 4)
     for i in range(5):  # 5 enemies per wave
         if random.random() >= 0.5:
             kind = None
@@ -346,7 +358,7 @@ for wave in range(500):
                 "t": start_time + i * 1500,  # Spawn each enemy 1 second apart
                 "y": random.randint(1, 18) * 5,
                 "hp": 3,
-                "k": 2,
+                "k": enemy_type_in_wave,
                 "w": 1,
                 "b": kind,
             }
