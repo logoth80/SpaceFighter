@@ -150,9 +150,6 @@ class Enemy:
     def __init__(self, x, y, hitpoints, enemy_type, weapon, potential_drop):
         self.posx = x
         self.posy = y
-        self.image = pygame.Surface((50, 30))
-        self.image.fill((255, 0, 0))
-        self.rect = self.image.get_rect(center=(int(x), int(y)))
         self.hitpoints = hitpoints
         self.type = enemy_type
         self.weapon = weapon
@@ -165,24 +162,30 @@ class Enemy:
             self.image = pygame.transform.scale(self.image, (60, 60))
             self.image = pygame.transform.rotate(self.image, random.randint(0, 359))
             self.rect = self.image.get_rect(center=(int(x), int(y)))
+            cx, cy = 45, 56
+            self.collision_rect = pygame.Rect(self.rect.centerx - cx // 2, self.rect.centery - cy // 2, cx, cy)
         elif enemy_type == 2:
             self.image = pygame.image.load("enemy2.png")
             self.image.convert_alpha()
             self.image = pygame.transform.scale(self.image, (80, 80))
             self.image = pygame.transform.rotate(self.image, random.randint(0, 359))
             self.rect = self.image.get_rect(center=(int(x), int(y)))
-            self.rect.width = 70
-            self.rect.height = 80
+            cx, cy = 65, 70
+            self.collision_rect = pygame.Rect(self.rect.centerx - cx // 2, self.rect.centery - cy // 2, cx, cy)
         elif enemy_type == 3:
             self.image = pygame.image.load("enemy3.png")
             self.image.convert_alpha()
             self.image = pygame.transform.scale(self.image, (75, 60))
             self.rect = self.image.get_rect(center=(int(x), int(y)))
+            cx, cy = 52, 56
+            self.collision_rect = pygame.Rect(self.rect.centerx - cx // 2, self.rect.centery - cy // 2, cx, cy)
         elif enemy_type == 4:
             self.image = pygame.image.load("enemy4.png")
             self.image.convert_alpha()
             self.image = pygame.transform.scale(self.image, (60, 80))
             self.rect = self.image.get_rect(center=(int(x), int(y)))
+            cx, cy = 45, 76
+            self.collision_rect = pygame.Rect(self.rect.centerx - cx // 2, self.rect.centery - cy // 2, cx, cy)
         else:
             self.image = pygame.image.load("enemy3.png")
 
@@ -190,7 +193,7 @@ class Enemy:
         self.posx -= scroll_speed
         self.rect.x = int(self.posx)
         self.rect.y = int(self.posy)
-
+        self.collision_rect.center = self.rect.center
         return self.rect.right > 0
 
     def shoot(self, enemy_bullets):
@@ -200,6 +203,7 @@ class Enemy:
 
     def draw(self):
         screen.blit(self.image, self.rect)
+        pygame.draw.rect(screen, (0, 255, 0), self.collision_rect, 2)
 
     def destroy(self):
         if self.potential_drop is not None:
@@ -408,7 +412,7 @@ while running:
     # Check collisions
     for bullet in bullets[:]:
         for enemy in enemies[:]:
-            if bullet.rect.colliderect(enemy.rect):
+            if bullet.rect.colliderect(enemy.collision_rect):
                 enemy.hitpoints -= 1
                 bullets.remove(bullet)
                 if enemy.hitpoints <= 0:
@@ -432,7 +436,7 @@ while running:
                 meteors.remove(meteor)
 
     for enemy in enemies[:]:
-        if spaceship.rect.colliderect(enemy.rect) and not spaceship.invulnerable:
+        if spaceship.rect.colliderect(enemy.collision_rect) and not spaceship.invulnerable:
             spaceship.lives -= 1
             spaceship.respawn()
             enemies.remove(enemy)
