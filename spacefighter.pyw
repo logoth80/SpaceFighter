@@ -147,10 +147,9 @@ class Meteor:
 
 # Enemy class
 class Enemy:
-    def __init__(self, x, y, hitpoints, enemy_type, weapon, potential_drop):
-        self.posx = x
-        self.posy = y
-        self.hitpoints = hitpoints
+    def __init__(self, x, y, maxhitpoints, enemy_type, weapon, potential_drop):
+        self.posx, self.posy = x, y
+        self.hitpoints = maxhitpoints
         self.type = enemy_type
         self.weapon = weapon
         self.potential_drop = potential_drop
@@ -159,26 +158,22 @@ class Enemy:
         self.image = pygame.image.load(f"enemy{self.type}.png")
         self.image.convert_alpha()
         if enemy_type == 1:
-            self.image = pygame.transform.scale(self.image, (60, 60))
             self.image = pygame.transform.rotate(self.image, random.randint(0, 359))
-            self.rect = self.image.get_rect(center=(int(x), int(y)))
+            self.image = pygame.transform.scale(self.image, (60, 60))
             cx, cy = 45, 56
         elif enemy_type == 2:
-            self.image = pygame.transform.scale(self.image, (80, 80))
             self.image = pygame.transform.rotate(self.image, random.randint(0, 359))
-            self.rect = self.image.get_rect(center=(int(x), int(y)))
+            self.image = pygame.transform.scale(self.image, (80, 80))
             cx, cy = 65, 70
         elif enemy_type == 3:
             self.image = pygame.transform.scale(self.image, (75, 60))
-            self.rect = self.image.get_rect(center=(int(x), int(y)))
             cx, cy = 52, 56
         elif enemy_type == 4:
             self.image = pygame.transform.scale(self.image, (60, 80))
-            self.rect = self.image.get_rect(center=(int(x), int(y)))
             cx, cy = 45, 76
         else:
             cx, cy = 50, 50
-
+        self.rect = self.image.get_rect(center=(int(x), int(y)))
         self.collision_rect = pygame.Rect(self.rect.centerx - cx // 2, self.rect.centery - cy // 2, cx, cy)
 
     def update(self):
