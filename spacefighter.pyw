@@ -99,16 +99,15 @@ class Spaceship:
 
 # Bullet class
 class Bullet:
+    bullet_image = pygame.image.load("bullet.png").convert_alpha()
+    bullet_image = pygame.transform.scale(bullet_image, (20, 20))
+
     def __init__(self, x, y, dx, dy, rotating=False):
-        self.image = pygame.Surface((20, 25))
-        self.image.fill((255, 255, 0))
-        self.rect = self.image.get_rect(center=(x, y))
+        self.rect = Bullet.bullet_image.get_rect(center=(x, y))
         self.x, self.y, self.dx, self.dy = x, y, dx, dy
         self.rotating = rotating
         self.spawntime = pygame.time.get_ticks()
         self.todestroy = False
-        self.image = pygame.image.load("bullet.png").convert_alpha()
-        self.image = pygame.transform.scale(self.image, (20, 20))
 
     def update(self):
         if self.rotating:
@@ -130,7 +129,7 @@ class Bullet:
         return self.rect.right > 0
 
     def draw(self):
-        screen.blit(self.image, self.rect)
+        screen.blit(Bullet.bullet_image, self.rect)
 
 
 # Meteor class
@@ -236,16 +235,15 @@ class Enemy:
 
 # EnemyBullet class
 class EnemyBullet:
+    eb_image = pygame.image.load("enemy_bullet.png").convert_alpha()
+    eb_image = pygame.transform.scale(eb_image, (20, 20))
+
     def __init__(self, x, y, dx, dy, spin=False):
-        self.image = pygame.Surface((20, 20))
-        self.image.fill((255, 0, 255))
-        self.rect = self.image.get_rect(center=(x, y))
         self.x, self.y = x, y
         self.dx, self.dy = dx, dy
-        self.image = pygame.image.load("enemy_bullet.png").convert_alpha()
-        self.image = pygame.transform.scale(self.image, (20, 20))
         self.spinning = spin
         self.spawn_time = pygame.time.get_ticks()
+        self.rect = EnemyBullet.eb_image.get_rect(center=(x, y))
 
     def update(self):
         self.x += self.dx
@@ -261,20 +259,18 @@ class EnemyBullet:
         return self.rect.left > 0
 
     def draw(self):
-        screen.blit(self.image, self.rect)
+        screen.blit(EnemyBullet.eb_image, self.rect)
 
 
 # Bonus class
 class Bonus:
     def __init__(self, x, y, bonus_type):
-        self.image = pygame.Surface((40, 40))
-        self.image.fill((0, 0, 255))
-        self.rect = self.image.get_rect(center=(x, y))
+        self.rect = pygame.Rect(x - 20, y - 20, 40, 40)
         self.bonus_type = bonus_type
         self.spawn_time = pygame.time.get_ticks()
         self.timetolive = 10000
         self.killtime = self.spawn_time + self.timetolive
-        self.posx = x
+        self.posx, self.posy = x, y
         if bonus_type == "weapon":
             self.r, self.g, self.b = 150, 150, 150
         elif bonus_type == "life":
