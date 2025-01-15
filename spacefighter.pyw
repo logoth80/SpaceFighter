@@ -16,8 +16,8 @@ VOID_BLACK = (5, 0, 25)
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption("SpaceFighter")
 clock = pygame.time.Clock()
-bg_nebula = pygame.image.load("nebula.jpg").convert()
-bg_nebula = pygame.transform.scale(bg_nebula, (SCREEN_WIDTH * 1.5, SCREEN_HEIGHT * 1.5))
+# bg_nebula = pygame.image.load("nebula.jpg").convert()
+# bg_nebula = pygame.transform.scale(bg_nebula, (SCREEN_WIDTH * 1.5, SCREEN_HEIGHT * 1.5))
 
 scroll_speed = 0.7
 score = 0
@@ -102,8 +102,7 @@ class Bullet:
         self.image = pygame.Surface((20, 25))
         self.image.fill((255, 255, 0))
         self.rect = self.image.get_rect(center=(x, y))
-        self.x, self.y = x, y
-        self.dx, self.dy = dx, dy
+        self.x, self.y, self.dx, self.dy = x, y, dx, dy
         self.rotating = rotating
         self.spawntime = pygame.time.get_ticks()
         self.todestroy = False
@@ -276,25 +275,16 @@ class Bonus:
         self.killtime = self.spawn_time + self.timetolive
         self.posx = x
         if bonus_type == "weapon":
-            self.r = 150
-            self.g = 150
-            self.b = 150
+            self.r, self.g, self.b = 150, 150, 150
         elif bonus_type == "life":
-            self.r = 0
-            self.g = 255
-            self.b = 0
+            self.r, self.g, self.b = 0, 255, 0
         elif bonus_type == "invulnerability":
-            self.r = 0
-            self.g = 0
-            self.b = 255
+            self.r, self.g, self.b = 0, 0, 255
         elif bonus_type == "speedup":
-            self.r = 255
-            self.g = 255
-            self.b = 0
+            self.r, self.g, self.b = 0, 255, 255
         else:
-            self.r = 255
-            self.g = 255
-            self.b = 255
+            self.r, self.g, self.b = 255, 255, 255
+
         self.rtemp = self.r
         self.gtemp = self.g
         self.btemp = self.b
@@ -302,7 +292,7 @@ class Bonus:
 
     def update(self):
         self.posx -= scroll_speed
-        self.rect.x = self.posx
+        self.rect.centerx = self.posx
         if self.rect.right < 0:
             bonuses.remove(self)
 
@@ -370,13 +360,8 @@ class Spawner:
 
 # Main game loop
 spaceship = Spaceship()
-bullets = []
-meteors = []
-enemies = []
-enemy_bullets = []
-bonuses = []
-backgroundstars = []
-meteor_list = []
+bullets, meteors, meteor_list, enemies, enemy_bullets, bonuses, backgroundstars = [], [], [], [], [], [], []
+
 for i in range(555):
     meteor_list.append({"t": 2000 + i * 4000, "y": random.randint(0, 20) * 5})
 
