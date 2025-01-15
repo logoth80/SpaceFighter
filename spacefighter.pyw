@@ -173,9 +173,10 @@ class Enemy:
 
     enemy3_image = pygame.image.load("enemy3.png").convert_alpha()
     enemy3_image = pygame.transform.scale(enemy3_image, (75, 60))
-
-    enemy4_image = pygame.image.load("enemy_4_1.png").convert_alpha()
-    enemy4_image = pygame.transform.scale(enemy4_image, (90, 90))
+    enemy4_image = []
+    for i in range(12):
+        enemy4_image.append(pygame.image.load(f"enemy_4_{i + 1}.png").convert_alpha())
+        enemy4_image[i] = pygame.transform.scale(enemy4_image[i], (90, 90))
 
     def __init__(self, x, y, maxhitpoints, enemy_type, weapon, potential_drop):
         self.posx, self.posy = x, y
@@ -186,6 +187,7 @@ class Enemy:
         self.potential_drop = potential_drop
         self.last_shot = pygame.time.get_ticks()
         self.explosion_sound = pygame.mixer.Sound("pop.wav")
+        self.frame = 0
         if enemy_type == 1:
             self.rect = Enemy.enemy1_image.get_rect(center=(int(x), int(y)))
             cx, cy = 45, 56
@@ -196,7 +198,7 @@ class Enemy:
             self.rect = Enemy.enemy3_image.get_rect(center=(int(x), int(y)))
             cx, cy = 52, 56
         elif enemy_type == 4:
-            self.rect = Enemy.enemy4_image.get_rect(center=(int(x), int(y)))
+            self.rect = Enemy.enemy4_image[0].get_rect(center=(int(x), int(y)))
             cx, cy = 60, 60
         else:
             cx, cy = 50, 50
@@ -241,8 +243,9 @@ class Enemy:
         elif self.type == 3:
             screen.blit(Enemy.enemy3_image, self.rect)
         elif self.type == 4:
-            screen.blit(Enemy.enemy4_image, self.rect)
-        pygame.draw.rect(screen, (0, 255, 0), self.collision_rect, 2)
+            self.frame += 0.2
+            screen.blit(Enemy.enemy4_image[int(self.frame) % 12], self.rect)
+        # pygame.draw.rect(screen, (0, 255, 0), self.collision_rect, 2)
 
     def destroy(self):
         if self.potential_drop is not None:
