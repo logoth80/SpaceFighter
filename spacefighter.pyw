@@ -1,6 +1,7 @@
 import pygame
 import random
 import math
+import json
 
 # Initialize Pygame
 pygame.init()
@@ -284,14 +285,10 @@ class Bonus:
             self.r, self.g, self.b = 0, 255, 255
         else:
             self.r, self.g, self.b = 255, 255, 255
-
-        self.rtemp = self.r
-        self.gtemp = self.g
-        self.btemp = self.b
         self.dim = 1.0
 
     def update(self):
-        self.posx -= scroll_speed
+        self.posx -= scroll_speed / 2
         self.rect.centerx = self.posx
         if self.rect.right < 0:
             bonuses.remove(self)
@@ -299,15 +296,12 @@ class Bonus:
         return self.rect.right > 0
 
     def draw(self):
-        t = 1.0
-        dim = 1
+        t, dim, a = 1.0, 1, 1
         if self.killtime - pygame.time.get_ticks() < 2000:
             t = self.killtime - pygame.time.get_ticks() / 400
             dim = max((self.killtime - pygame.time.get_ticks()) / 2000, 0.3)
-            self.rtemp = int(self.r * max(0.3, abs(math.sin(t))) * dim)
-            self.gtemp = int(self.g * max(0.3, abs(math.sin(t))) * dim)
-            self.btemp = int(self.b * max(0.3, abs(math.sin(t))) * dim)
-        self.color = (self.rtemp, self.gtemp, self.btemp)
+            a = max(0.3, abs(math.sin(t))) * dim
+        self.color = (int(self.r * a), int(self.g * a), int(self.b * a))
         pygame.draw.circle(screen, self.color, self.rect.center, 20)
 
         # screen.blit(self.image, self.rect)
@@ -360,33 +354,16 @@ class Spawner:
 
 # Main game loop
 spaceship = Spaceship()
-bullets, meteors, meteor_list, enemies, enemy_bullets, bonuses, backgroundstars = [], [], [], [], [], [], []
+bullets, meteors, meteor_list, enemies, enemy_bullets, bonuses, backgroundstars, enemy_list = [], [], [], [], [], [], [], []
 
-for i in range(555):
-    meteor_list.append({"t": 2000 + i * 4000, "y": random.randint(0, 20) * 5})
 
-enemy_list = []
-
-# Create waves of enemies
-for wave in range(500):
-    start_time = 5000 + wave * 25000  # Each wave starts 10 seconds apart
-    enemy_type_in_wave = random.randint(1, 4)
-    for i in range(5):  # 5 enemies per wave
-        if random.random() >= 0.5:
-            kind = None
-        else:
-            kind = random.choice(["weapon", "life", "invulnerability"])
-        enemy_list.append(
-            {
-                "t": start_time + i * 1500,  # Spawn each enemy 1 second apart
-                "y": random.randint(2, 18) * 5,
-                "hp": 3,
-                "k": enemy_type_in_wave,
-                "w": 1,
-                "b": kind,
-            }
-        )
-
+# load level
+with open("l1.json", "r") as f:
+    for line in f:
+        enemy_list.append(json.loads(line.strip()))
+with open("l1m.json", "r") as f:
+    for line in f:
+        meteor_list.append(json.loads(line.strip()))
 
 spawner = Spawner(meteor_list, enemy_list)
 
@@ -406,7 +383,7 @@ while running:
             elif event.key == pygame.K_SPACE:
                 if spaceship.weapon_level < 10:
                     spaceship.weapon_level += 1
-                print(len(bullets))
+                print(f"bu: {len(bullets)}, eb: {len(enemy_bullets)}, en: {len(enemies)}, meteors: {len(meteors)}")
 
     # Update spaceship
     spaceship.move(keys)
@@ -456,6 +433,8 @@ while running:
             meteor.hit(5)
             if meteor.hitpoints <= 0:
                 meteors.remove(meteor)
+        if meteor.rect.x < -100 and meteor in meteors:
+            meteors.remove(meteor)
 
     for enemy in enemies[:]:
         if spaceship.rect.colliderect(enemy.collision_rect) and not spaceship.invulnerable:
