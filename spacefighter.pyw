@@ -39,14 +39,10 @@ class Spaceship:
         self.energy = 100
         self.weapon_level = 1
         self.shot_delay = 500
-        self.last_shot = 0
+        self.last_shot, self.last_spin, self.lastudown = 0, 0, 0
         self.spaceship_pics = []
-        self.spaceship_pics.append(pygame.image.load("ship1.png").convert_alpha())
-        self.spaceship_pics.append(pygame.image.load("ship2.png").convert_alpha())
-        self.spaceship_pics.append(pygame.image.load("ship3.png").convert_alpha())
-        self.spaceship_pics.append(pygame.image.load("ship4.png").convert_alpha())
-        self.spaceship_pics.append(pygame.image.load("ship5.png").convert_alpha())
         for i in range(5):
+            self.spaceship_pics.append(pygame.image.load(f"ship{i + 1}.png").convert_alpha())
             self.spaceship_pics[i] = pygame.transform.scale(self.spaceship_pics[i], (60, 60))
 
     def move(self, keys):
@@ -75,11 +71,17 @@ class Spaceship:
             else:
                 self.last_shot = pygame.time.get_ticks() - 500 + self.weapon_level * 40
             self.everysecond = not self.everysecond
-
-            bullets.append(Bullet(self.rect.centerx, self.rect.centery))
+            bullets.append(Bullet(self.rect.right, self.rect.centery, 10, 0, False))
             self.shoot_sound.play()
         if self.invulnerable and pygame.time.get_ticks() > self.spawnedat + 5000:
             self.invulnerable = False
+        if pygame.time.get_ticks() > self.last_spin + 3750 and self.weapon_level >= 8:
+            bullets.append(Bullet(self.rect.centerx, self.rect.centery, 10, 0, True))
+            self.last_spin = pygame.time.get_ticks()
+        if pygame.time.get_ticks() > self.lastudown + 2000 and self.weapon_level >= 10:
+            bullets.append(Bullet(self.rect.centerx, self.rect.top, 0, -5, False))
+            bullets.append(Bullet(self.rect.centerx, self.rect.bottom, 0, 5, False))
+            self.lastudown = pygame.time.get_ticks()
 
     def respawn(self):
         self.rect.center = (100, SCREEN_HEIGHT // 2)
@@ -96,16 +98,35 @@ class Spaceship:
 
 # Bullet class
 class Bullet:
-    def __init__(self, x, y):
+    def __init__(self, x, y, dx, dy, rotating=False):
         self.image = pygame.Surface((20, 25))
         self.image.fill((255, 255, 0))
         self.rect = self.image.get_rect(center=(x, y))
-        self.speed = 10
+        self.x, self.y = x, y
+        self.dx, self.dy = dx, dy
+        self.rotating = rotating
+        self.spawntime = pygame.time.get_ticks()
+        self.todestroy = False
         self.image = pygame.image.load("bullet.png").convert_alpha()
-        self.image = pygame.transform.scale(self.image, (25, 25))
+        self.image = pygame.transform.scale(self.image, (20, 20))
 
     def update(self):
-        self.rect.x += self.speed
+        if self.rotating:
+            t = pygame.time.get_ticks() - self.spawntime
+            offsetx = 0.1 * min(600, 600) * math.sin(t / 200)
+            offsety = 0.1 * min(600, 600) * math.cos(t / 200)
+            self.x = spaceship.rect.centerx + offsetx
+            self.y = spaceship.rect.centery + offsety
+            self.rect.centerx, self.rect.centery = self.x, self.y
+            if pygame.time.get_ticks() - self.spawntime >= 3900:
+                self.todestroy = True
+        else:
+            self.x += self.dx
+            self.y += self.dy
+            self.rect.centerx, self.rect.centery = self.x, self.y
+            if self.x > 4000 or self.y > 2500 or self.x < -300 or self.y < -300:
+                # print("Removing bullet")
+                self.todestroy = True
         return self.rect.right > 0
 
     def draw(self):
@@ -115,25 +136,20 @@ class Bullet:
 # Meteor class
 class Meteor:
     def __init__(self, x, y):
-        self.posx = x
-        self.image = pygame.Surface((60, 60))
-        self.image.fill((128, 128, 128))
-        self.rect = self.image.get_rect(center=(x, y))
+        self.posx, self.posy = x, y
+        cx, cy = 53, 55
         self.maxhp = 10
         self.hitpoints = self.maxhp
         self.image = pygame.image.load("rock.png").convert_alpha()
-        self.image = pygame.transform.scale(self.image, (55, 50))
+        self.image = pygame.transform.scale(self.image, (70, 63))
         self.image = pygame.transform.rotate(self.image, random.randint(0, 359))
         self.rect = self.image.get_rect(center=(x, y))
-        self.rect2 = self.image.get_rect(center=(x, y))
-        self.rect.y += 10
-        self.rect.width -= 30
-        self.rect.height -= 20
+        self.collision_rect = pygame.Rect(self.rect.centerx - cx // 2, self.rect.centery - cy // 2, cx, cy)
 
     def update(self):
         self.posx -= scroll_speed
-        self.rect.x = int(self.posx + 10)
-        self.rect2.x = int(self.posx)
+        self.rect.centerx = int(self.posx)
+        self.collision_rect.centerx = int(self.posx)
         return self.rect.right > 0
 
     def hit(self, hit):
@@ -142,7 +158,8 @@ class Meteor:
         self.image.set_alpha(alpha)
 
     def draw(self):
-        screen.blit(self.image, self.rect2)
+        screen.blit(self.image, self.rect)
+        # pygame.draw.rect(screen, (0, 255, 0), self.collision_rect, 2)
 
 
 # Enemy class
@@ -150,6 +167,7 @@ class Enemy:
     def __init__(self, x, y, maxhitpoints, enemy_type, weapon, potential_drop):
         self.posx, self.posy = x, y
         self.hitpoints = maxhitpoints
+        self.speed = scroll_speed + 0.2
         self.type = enemy_type
         self.weapon = weapon
         self.potential_drop = potential_drop
@@ -177,20 +195,38 @@ class Enemy:
         self.collision_rect = pygame.Rect(self.rect.centerx - cx // 2, self.rect.centery - cy // 2, cx, cy)
 
     def update(self):
-        self.posx -= scroll_speed
+        self.posx -= self.speed
         self.rect.x = int(self.posx)
         self.rect.y = int(self.posy)
         self.collision_rect.center = self.rect.center
         return self.rect.right > 0
 
     def shoot(self, enemy_bullets):
-        if random.randint(1, 600) == 7 and self.last_shot + 300 < pygame.time.get_ticks():
-            enemy_bullets.append(EnemyBullet(self.rect.left, self.rect.centery))
-            self.last_shot = pygame.time.get_ticks()
+        shoot_roll = random.randint(0, 600)
+        if self.type == 3:
+            if shoot_roll == 600 and self.last_shot + 300 < pygame.time.get_ticks():
+                enemy_bullets.append(EnemyBullet(self.rect.left, self.rect.centery, -3, 0))
+                enemy_bullets.append(EnemyBullet(self.rect.left, self.rect.centery, -2, -2))
+                enemy_bullets.append(EnemyBullet(self.rect.left, self.rect.centery, -2, 2))
+                self.last_shot = pygame.time.get_ticks()
+        elif self.type == 4:
+            if shoot_roll == 600 and self.last_shot + 300 < pygame.time.get_ticks():
+                enemy_bullets.append(EnemyBullet(self.rect.left, self.rect.centery, -3, 0))
+                enemy_bullets.append(EnemyBullet(self.rect.centerx, self.rect.top, -scroll_speed, -3))
+                enemy_bullets.append(EnemyBullet(self.rect.centerx, self.rect.bottom, -scroll_speed, 3))
+                self.last_shot = pygame.time.get_ticks()
+        elif self.type == 2:
+            if shoot_roll >= 600 and self.last_shot + 300 < pygame.time.get_ticks():
+                enemy_bullets.append(EnemyBullet(self.rect.left, self.rect.centery, -3, 0, True))
+                self.last_shot = pygame.time.get_ticks()
+        else:
+            if shoot_roll >= 598 and self.last_shot + 300 < pygame.time.get_ticks():
+                enemy_bullets.append(EnemyBullet(self.rect.left, self.rect.centery, -3, 0))
+                self.last_shot = pygame.time.get_ticks()
 
     def draw(self):
         screen.blit(self.image, self.rect)
-        pygame.draw.rect(screen, (0, 255, 0), self.collision_rect, 2)
+        # pygame.draw.rect(screen, (0, 255, 0), self.collision_rect, 2)
 
     def destroy(self):
         if self.potential_drop is not None:
@@ -200,17 +236,28 @@ class Enemy:
 
 # EnemyBullet class
 class EnemyBullet:
-    def __init__(self, x, y):
+    def __init__(self, x, y, dx, dy, spin=False):
         self.image = pygame.Surface((20, 20))
         self.image.fill((255, 0, 255))
         self.rect = self.image.get_rect(center=(x, y))
-        self.speed = 3
+        self.x, self.y = x, y
+        self.dx, self.dy = dx, dy
         self.image = pygame.image.load("enemy_bullet.png").convert_alpha()
-
         self.image = pygame.transform.scale(self.image, (20, 20))
+        self.spinning = spin
+        self.spawn_time = pygame.time.get_ticks()
 
     def update(self):
-        self.rect.x -= self.speed
+        self.x += self.dx
+        self.y += self.dy
+        self.rect.x = int(self.x)
+        self.rect.y = int(self.y)
+        if self.spinning:
+            t = pygame.time.get_ticks() - self.spawn_time
+            offsetx = 0.02 * t * math.sin(t / 150)
+            offsety = 0.02 * t * math.cos(t / 150)
+            self.rect.x = self.x + offsetx
+            self.rect.y = self.y + offsety
         return self.rect.left > 0
 
     def draw(self):
@@ -279,11 +326,11 @@ class Bonus:
 # background stars class
 class Star:
     def __init__(self):
-        self.size = random.randint(1, 2)
-        self.color = (255 - self.size * 50, 255 - self.size * 50, 255 - self.size * 50)
+        self.size = random.randint(1, 5)
+        self.color = (255 - self.size * 35, 255 - self.size * 35, 255 - self.size * 35)
         self.x = random.randint(0, SCREEN_WIDTH + 3)
         self.y = random.randint(-2, SCREEN_HEIGHT + 2)
-        self.image = pygame.draw.circle(screen, self.color, (self.x, self.y), self.size)
+        self.image = pygame.draw.circle(screen, self.color, (self.x, self.y), self.size // 2)
 
     def update(self):
         self.x -= scroll_speed / 3
@@ -293,7 +340,7 @@ class Star:
         return True
 
     def draw(self):
-        pygame.draw.circle(screen, self.color, (self.x, self.y), self.size)
+        pygame.draw.circle(screen, self.color, (self.x, self.y), self.size // 2)
         return True
 
 
@@ -331,7 +378,7 @@ bonuses = []
 backgroundstars = []
 meteor_list = []
 for i in range(555):
-    meteor_list.append({"t": 2000 + i * 5000, "y": random.randint(0, 19) * 5})
+    meteor_list.append({"t": 2000 + i * 4000, "y": random.randint(0, 20) * 5})
 
 enemy_list = []
 
@@ -347,7 +394,7 @@ for wave in range(500):
         enemy_list.append(
             {
                 "t": start_time + i * 1500,  # Spawn each enemy 1 second apart
-                "y": random.randint(1, 18) * 5,
+                "y": random.randint(2, 18) * 5,
                 "hp": 3,
                 "k": enemy_type_in_wave,
                 "w": 1,
@@ -358,7 +405,7 @@ for wave in range(500):
 
 spawner = Spawner(meteor_list, enemy_list)
 
-for i in range(300):
+for i in range(400):
     backgroundstars.append(Star())
 
 running = True
@@ -374,6 +421,7 @@ while running:
             elif event.key == pygame.K_SPACE:
                 if spaceship.weapon_level < 10:
                     spaceship.weapon_level += 1
+                print(len(bullets))
 
     # Update spaceship
     spaceship.move(keys)
@@ -407,15 +455,17 @@ while running:
                     enemies.remove(enemy)
                     score += 100
         for meteor in meteors[:]:
-            if bullet.rect.colliderect(meteor.rect):
+            if bullet.rect.colliderect(meteor.collision_rect):
                 meteor.hit(1)
                 if bullet in bullets:
                     bullets.remove(bullet)
                 if meteor.hitpoints <= 0:
                     meteors.remove(meteor)
+        if bullet.todestroy and bullet in bullets:
+            bullets.remove(bullet)
 
     for meteor in meteors[:]:
-        if spaceship.rect.colliderect(meteor.rect) and not spaceship.invulnerable:
+        if spaceship.rect.colliderect(meteor.collision_rect) and not spaceship.invulnerable:
             spaceship.lives -= 1
             spaceship.respawn()
             meteor.hit(5)
