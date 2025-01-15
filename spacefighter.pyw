@@ -3,6 +3,8 @@ import random
 import math
 import json
 
+import pygame.locals
+
 # Initialize Pygame
 pygame.init()
 
@@ -163,6 +165,18 @@ class Meteor:
 
 # Enemy class
 class Enemy:
+    enemy1_image = pygame.image.load("enemy1.png").convert_alpha()
+    enemy1_image = pygame.transform.scale(enemy1_image, (60, 60))
+
+    enemy2_image = pygame.image.load("enemy2.png").convert_alpha()
+    enemy2_image = pygame.transform.scale(enemy2_image, (80, 80))
+
+    enemy3_image = pygame.image.load("enemy3.png").convert_alpha()
+    enemy3_image = pygame.transform.scale(enemy3_image, (75, 60))
+
+    enemy4_image = pygame.image.load("enemy_4_1.png").convert_alpha()
+    enemy4_image = pygame.transform.scale(enemy4_image, (90, 90))
+
     def __init__(self, x, y, maxhitpoints, enemy_type, weapon, potential_drop):
         self.posx, self.posy = x, y
         self.hitpoints = maxhitpoints
@@ -172,25 +186,21 @@ class Enemy:
         self.potential_drop = potential_drop
         self.last_shot = pygame.time.get_ticks()
         self.explosion_sound = pygame.mixer.Sound("pop.wav")
-        self.image = pygame.image.load(f"enemy{self.type}.png")
-        self.image.convert_alpha()
         if enemy_type == 1:
-            self.image = pygame.transform.rotate(self.image, random.randint(0, 359))
-            self.image = pygame.transform.scale(self.image, (60, 60))
+            self.rect = Enemy.enemy1_image.get_rect(center=(int(x), int(y)))
             cx, cy = 45, 56
         elif enemy_type == 2:
-            self.image = pygame.transform.rotate(self.image, random.randint(0, 359))
-            self.image = pygame.transform.scale(self.image, (80, 80))
+            self.rect = Enemy.enemy2_image.get_rect(center=(int(x), int(y)))
             cx, cy = 65, 70
         elif enemy_type == 3:
-            self.image = pygame.transform.scale(self.image, (75, 60))
+            self.rect = Enemy.enemy3_image.get_rect(center=(int(x), int(y)))
             cx, cy = 52, 56
         elif enemy_type == 4:
-            self.image = pygame.transform.scale(self.image, (60, 80))
-            cx, cy = 45, 76
+            self.rect = Enemy.enemy4_image.get_rect(center=(int(x), int(y)))
+            cx, cy = 60, 60
         else:
             cx, cy = 50, 50
-        self.rect = self.image.get_rect(center=(int(x), int(y)))
+        # self.rect = self.image.get_rect(center=(int(x), int(y)))
         self.collision_rect = pygame.Rect(self.rect.centerx - cx // 2, self.rect.centery - cy // 2, cx, cy)
 
     def update(self):
@@ -224,8 +234,15 @@ class Enemy:
                 self.last_shot = pygame.time.get_ticks()
 
     def draw(self):
-        screen.blit(self.image, self.rect)
-        # pygame.draw.rect(screen, (0, 255, 0), self.collision_rect, 2)
+        if self.type == 1:
+            screen.blit(Enemy.enemy1_image, self.rect)
+        elif self.type == 2:
+            screen.blit(Enemy.enemy2_image, self.rect)
+        elif self.type == 3:
+            screen.blit(Enemy.enemy3_image, self.rect)
+        elif self.type == 4:
+            screen.blit(Enemy.enemy4_image, self.rect)
+        pygame.draw.rect(screen, (0, 255, 0), self.collision_rect, 2)
 
     def destroy(self):
         if self.potential_drop is not None:
