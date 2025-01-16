@@ -19,8 +19,6 @@ VOID_BLACK = (5, 0, 25)
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption("SpaceFighter")
 clock = pygame.time.Clock()
-# bg_nebula = pygame.image.load("nebula.jpg").convert()
-# bg_nebula = pygame.transform.scale(bg_nebula, (SCREEN_WIDTH * 1.5, SCREEN_HEIGHT * 1.5))
 
 scroll_speed = 0.7
 score = 0
@@ -31,7 +29,6 @@ ui_font = pygame.font.SysFont("Arial", 32)
 class Spaceship:
     def __init__(self):
         self.image = pygame.Surface((50, 40))
-        self.image.fill((0, 0, 0))
         self.shoot_sound = pygame.mixer.Sound("assets\\laser.mp3")
         self.shoot_sound.set_volume(0.3)
         self.invulnerable = True
@@ -317,7 +314,6 @@ class Bonus:
         self.rect.centerx = self.posx
         if self.rect.right < 0:
             bonuses.remove(self)
-
         return self.rect.right > 0
 
     def draw(self):
@@ -329,10 +325,8 @@ class Bonus:
         self.color = (int(self.r * a), int(self.g * a), int(self.b * a))
         pygame.draw.circle(screen, self.color, self.rect.center, 20)
 
-        # screen.blit(self.image, self.rect)
 
-
-# background stars class
+# background stars class (unused)
 class Star:
     def __init__(self):
         self.size = random.randint(1, 5)
@@ -360,7 +354,6 @@ class Spawner:
     def __init__(self, meteor_list, enemy_list):
         self.meteor_list = meteor_list
         self.enemy_list = enemy_list
-        self.last_spawn_time = 0
 
     def spawn(self, meteors, enemies):
         current_time = pygame.time.get_ticks()
@@ -375,11 +368,9 @@ class Spawner:
                 enemies.append(
                     Enemy(SCREEN_WIDTH + 70, e["y"] * SCREEN_HEIGHT / 100, e["hp"], e["k"], e["w"], e["b"])
                 )  # Time, Y-position, HP, Kind, Weapon, Bonus
-
                 self.enemy_list.remove(e)
 
 
-# Main game loop
 spaceship = Spaceship()
 bullets, meteors, meteor_list, enemies, enemy_bullets, bonuses, backgroundstars, enemy_list = [], [], [], [], [], [], [], []
 
@@ -394,8 +385,8 @@ with open("l1m.json", "r") as f:
 
 spawner = Spawner(meteor_list, enemy_list)
 
-for i in range(800):
-    backgroundstars.append(Star())
+# for i in range(800):       #unused
+#     backgroundstars.append(Star())
 
 frame_number = 0  # Frame counter
 last_test = pygame.time.get_ticks()
@@ -419,7 +410,6 @@ while running:
         frame_number = 0
 
     keys = pygame.key.get_pressed()
-
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
@@ -435,22 +425,20 @@ while running:
     spaceship.move(keys)
     spaceship.shoot(bullets)
 
-    # Update bullets
-    bullets = [b for b in bullets if b.update()]
-    enemy_bullets = [eb for eb in enemy_bullets if eb.update()]
-
     # Spawn meteors and enemies
     spawner.spawn(meteors, enemies)
 
     # Update meteors and enemies
-    meteors = [m for m in meteors if m.update()]
-    enemies = [e for e in enemies if e.update()]
-
-    # update/draw stars
-    backgroundstars = [s for s in backgroundstars if s.update()]
-
-    # update bonnuses
-    bonuses = [bo for bo in bonuses if bo.update()]
+    for meteor in meteors[:]:
+        meteor.update()
+    for enemy in enemies[:]:
+        enemy.update()
+    for bonus in bonuses[:]:
+        bonus.update()
+    for bullet in bullets[:]:
+        bullet.update()
+    for enemy_bullet in enemy_bullets[:]:
+        enemy_bullet.update()
 
     # Check collisions
     for bullet in bullets[:]:
