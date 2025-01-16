@@ -3,13 +3,13 @@ import random
 import math
 import json
 
-import pygame.locals
-
 # Initialize Pygame
 pygame.init()
 
 # Constants
-SCREEN_WIDTH, SCREEN_HEIGHT = 960, 512
+SCREEN_WIDTH, SCREEN_HEIGHT = 960, 540
+# SCREEN_WIDTH, SCREEN_HEIGHT = 1920, 1080
+
 FPS = 100
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
@@ -203,7 +203,7 @@ class Enemy:
         elif enemy_type == 3:
             self.imageoverlay = Enemy.enemy3_image[1]
             self.rect = Enemy.enemy3_image[0].get_rect(center=(int(x), int(y)))
-            cx, cy = 65, 65
+            cx, cy = 65, 70
         elif enemy_type == 4:
             self.rect = Enemy.enemy4_image[0].get_rect(center=(int(x), int(y)))
             cx, cy = 60, 60
@@ -336,20 +336,22 @@ class Bonus:
 class Star:
     def __init__(self):
         self.size = random.randint(1, 5)
+        self.halfsize = self.size // 2
         self.color = (255 - self.size * 35, 255 - self.size * 35, 255 - self.size * 35)
         self.x = random.randint(0, SCREEN_WIDTH + 3)
         self.y = random.randint(-2, SCREEN_HEIGHT + 2)
         self.image = pygame.draw.circle(screen, self.color, (self.x, self.y), self.size // 2)
+        self.shift = scroll_speed / 3
 
     def update(self):
-        self.x -= scroll_speed / 3
+        self.x -= self.shift
         if self.x <= -4:
             self.x = SCREEN_WIDTH + 3
             self.y = random.randint(-2, SCREEN_HEIGHT + 2)
         return True
 
     def draw(self):
-        pygame.draw.circle(screen, self.color, (self.x, self.y), self.size // 2)
+        pygame.draw.circle(screen, self.color, (self.x, self.y), self.halfsize)
         return True
 
 
@@ -365,13 +367,13 @@ class Spawner:
         # Spawn meteors
         for m in self.meteor_list:
             if current_time >= m["t"]:
-                meteors.append(Meteor(SCREEN_WIDTH, m["y"] * SCREEN_HEIGHT / 100))
+                meteors.append(Meteor(SCREEN_WIDTH + 70, m["y"] * SCREEN_HEIGHT / 100))
                 self.meteor_list.remove(m)
         # Spawn enemies
         for e in self.enemy_list:
             if current_time >= e["t"]:
                 enemies.append(
-                    Enemy(SCREEN_WIDTH, e["y"] * SCREEN_HEIGHT / 100, e["hp"], e["k"], e["w"], e["b"])
+                    Enemy(SCREEN_WIDTH + 70, e["y"] * SCREEN_HEIGHT / 100, e["hp"], e["k"], e["w"], e["b"])
                 )  # Time, Y-position, HP, Kind, Weapon, Bonus
 
                 self.enemy_list.remove(e)
@@ -392,11 +394,30 @@ with open("l1m.json", "r") as f:
 
 spawner = Spawner(meteor_list, enemy_list)
 
-for i in range(400):
+for i in range(800):
     backgroundstars.append(Star())
 
+frame_number = 0  # Frame counter
+last_test = pygame.time.get_ticks()
+
 running = True
+bg_image = pygame.image.load("stars_5407.png")
+bg_image2 = pygame.image.load("stars_8484.png")
+bg_shift = 0
+reorder = False
+
 while running:
+    frame_number += 1
+    bg_shift += scroll_speed / 3
+    if bg_shift >= 1920:
+        bg_shift -= 1920
+        reorder = not reorder
+
+    if pygame.time.get_ticks() >= last_test + 2000:
+        print(frame_number / 2)
+        last_test = pygame.time.get_ticks()
+        frame_number = 0
+
     keys = pygame.key.get_pressed()
 
     for event in pygame.event.get():
@@ -486,12 +507,19 @@ while running:
             bonuses.remove(bonus)
 
     # Draw everything
-    screen.fill(VOID_BLACK)
+    # screen.fill(VOID_BLACK)
+    if not reorder:
+        screen.blit(bg_image, (0 - int(bg_shift), 0))
+        screen.blit(bg_image2, (1920 - int(bg_shift), 0))
+    else:
+        screen.blit(bg_image2, (0 - int(bg_shift), 0))
+        screen.blit(bg_image, (1920 - int(bg_shift), 0))
 
-    # screen.blit(bg_nebula, (0 - int(spaceship.rect.centerx / 3), 0 - int(spaceship.rect.centery / 3)))
+    # for bs in backgroundstars:
+    #     bs.draw()
+    # if pygame.time.get_ticks() % 5000 == 0:
+    #     pygame.image.save(screen, f"stars_{random.randint(1000, 9999)}.png")
 
-    for bs in backgroundstars:
-        bs.draw()
     spaceship.draw()
     for b in bullets:
         b.draw()
@@ -512,7 +540,7 @@ while running:
     lives_text = ui_font.render("Lives: " + str(spaceship.lives), True, WHITE)
     screen.blit(lives_text, (SCREEN_WIDTH - lives_text.get_width() - 10, SCREEN_HEIGHT - score_text.get_height() - 2))
 
-    # Display update
+    # Display update-
     pygame.display.flip()
     clock.tick(FPS)
 
