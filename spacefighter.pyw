@@ -123,7 +123,6 @@ class Bullet:
             self.y += self.dy
             self.rect.centerx, self.rect.centery = self.x, self.y
             if self.x > 4000 or self.y > 2500 or self.x < -300 or self.y < -300:
-                # print("Removing bullet")
                 self.todestroy = True
         return self.rect.right > 0
 
@@ -139,8 +138,13 @@ class Meteor:
         self.maxhp = 10
         self.hitpoints = self.maxhp
         self.image = pygame.image.load("assets\\rock.png").convert_alpha()
+        self.image_over = pygame.image.load("assets\\rockover.png").convert_alpha()
         self.image = pygame.transform.scale(self.image, (70, 63))
-        self.image = pygame.transform.rotate(self.image, random.randint(0, 359))
+        self.image_over = pygame.transform.scale(self.image_over, (70, 63))
+        self.image_over.set_alpha(0)
+        angle = random.randint(0, 359)
+        self.image = pygame.transform.rotate(self.image, angle)
+        self.image_over = pygame.transform.rotate(self.image_over, angle)
         self.rect = self.image.get_rect(center=(x, y))
         self.collision_rect = pygame.Rect(self.rect.centerx - cx // 2, self.rect.centery - cy // 2, cx, cy)
 
@@ -152,11 +156,13 @@ class Meteor:
 
     def hit(self, hit):
         self.hitpoints -= hit
-        alpha = int(125 + 130 * self.hitpoints / self.maxhp)
-        self.image.set_alpha(alpha)
+        alpha = int(255 - 255 * self.hitpoints / self.maxhp)
+        self.image_over.set_alpha(alpha)
 
     def draw(self):
         screen.blit(self.image, self.rect)
+        screen.blit(self.image_over, self.rect)
+
         # pygame.draw.rect(screen, (0, 255, 0), self.collision_rect, 2)
 
 
