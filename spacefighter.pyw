@@ -32,7 +32,7 @@ class Spaceship:
     def __init__(self):
         self.image = pygame.Surface((50, 40))
         self.image.fill((0, 0, 0))
-        self.shoot_sound = pygame.mixer.Sound("laser.mp3")
+        self.shoot_sound = pygame.mixer.Sound("assets\\laser.mp3")
         self.shoot_sound.set_volume(0.3)
         self.invulnerable = True
         self.spawnedat = pygame.time.get_ticks()
@@ -45,7 +45,7 @@ class Spaceship:
         self.last_shot, self.last_spin, self.lastudown = 0, 0, 0
         self.spaceship_pics = []
         for i in range(5):
-            self.spaceship_pics.append(pygame.image.load(f"ship{i + 1}.png").convert_alpha())
+            self.spaceship_pics.append(pygame.image.load(f"assets\\ship{i + 1}.png").convert_alpha())
             self.spaceship_pics[i] = pygame.transform.scale(self.spaceship_pics[i], (60, 60))
 
     def move(self, keys):
@@ -101,7 +101,7 @@ class Spaceship:
 
 # Bullet class
 class Bullet:
-    bullet_image = pygame.image.load("bullet.png").convert_alpha()
+    bullet_image = pygame.image.load("assets\\bullet.png").convert_alpha()
     bullet_image = pygame.transform.scale(bullet_image, (20, 20))
 
     def __init__(self, x, y, dx, dy, rotating=False):
@@ -141,7 +141,7 @@ class Meteor:
         cx, cy = 53, 55
         self.maxhp = 10
         self.hitpoints = self.maxhp
-        self.image = pygame.image.load("rock.png").convert_alpha()
+        self.image = pygame.image.load("assets\\rock.png").convert_alpha()
         self.image = pygame.transform.scale(self.image, (70, 63))
         self.image = pygame.transform.rotate(self.image, random.randint(0, 359))
         self.rect = self.image.get_rect(center=(x, y))
@@ -165,17 +165,17 @@ class Meteor:
 
 # Enemy class
 class Enemy:
-    enemy1_image = pygame.image.load("enemy1.png").convert_alpha()
+    enemy1_image = pygame.image.load("assets\\enemy1.png").convert_alpha()
     enemy1_image = pygame.transform.scale(enemy1_image, (60, 60))
 
-    enemy2_image = pygame.image.load("enemy2.png").convert_alpha()
+    enemy2_image = pygame.image.load("assets\\enemy2.png").convert_alpha()
     enemy2_image = pygame.transform.scale(enemy2_image, (80, 80))
 
-    enemy3_image = pygame.image.load("enemy3.png").convert_alpha()
+    enemy3_image = pygame.image.load("assets\\enemy3.png").convert_alpha()
     enemy3_image = pygame.transform.scale(enemy3_image, (75, 60))
     enemy4_image = []
     for i in range(12):
-        enemy4_image.append(pygame.image.load(f"enemy_4_{i + 1}.png").convert_alpha())
+        enemy4_image.append(pygame.image.load(f"assets\\enemy_4_{i + 1}.png").convert_alpha())
         enemy4_image[i] = pygame.transform.scale(enemy4_image[i], (90, 90))
 
     def __init__(self, x, y, maxhitpoints, enemy_type, weapon, potential_drop):
@@ -186,7 +186,7 @@ class Enemy:
         self.weapon = weapon
         self.potential_drop = potential_drop
         self.last_shot = pygame.time.get_ticks()
-        self.explosion_sound = pygame.mixer.Sound("pop.wav")
+        self.explosion_sound = pygame.mixer.Sound("assets\\pop.wav")
         self.frame = 0
         if enemy_type == 1:
             self.rect = Enemy.enemy1_image.get_rect(center=(int(x), int(y)))
@@ -255,7 +255,7 @@ class Enemy:
 
 # EnemyBullet class
 class EnemyBullet:
-    eb_image = pygame.image.load("enemy_bullet.png").convert_alpha()
+    eb_image = pygame.image.load("assets/enemy_bullet.png").convert_alpha()
     eb_image = pygame.transform.scale(eb_image, (20, 20))
 
     def __init__(self, x, y, dx, dy, spin=False):
