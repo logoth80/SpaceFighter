@@ -171,8 +171,13 @@ class Enemy:
     enemy2_image = pygame.image.load("assets\\enemy2.png").convert_alpha()
     enemy2_image = pygame.transform.scale(enemy2_image, (80, 80))
 
-    enemy3_image = pygame.image.load("assets\\enemy3.png").convert_alpha()
-    enemy3_image = pygame.transform.scale(enemy3_image, (75, 60))
+    enemy3_image = []
+    enemy3_image.append(pygame.image.load("assets\\enemy_3_1.png").convert_alpha())
+    enemy3_image[0] = pygame.transform.scale(enemy3_image[0], (75, 75))
+    enemy3_image.append(pygame.image.load("assets\\enemy_3_9.png").convert_alpha())
+    enemy3_image[1] = pygame.transform.scale(enemy3_image[1], (75, 75))
+    enemy3_image[1].set_alpha(255)
+
     enemy4_image = []
     for i in range(12):
         enemy4_image.append(pygame.image.load(f"assets\\enemy_4_{i + 1}.png").convert_alpha())
@@ -180,6 +185,7 @@ class Enemy:
 
     def __init__(self, x, y, maxhitpoints, enemy_type, weapon, potential_drop):
         self.posx, self.posy = x, y
+        self.maxhp = maxhitpoints
         self.hitpoints = maxhitpoints
         self.speed = scroll_speed + 0.2
         self.type = enemy_type
@@ -195,8 +201,9 @@ class Enemy:
             self.rect = Enemy.enemy2_image.get_rect(center=(int(x), int(y)))
             cx, cy = 65, 70
         elif enemy_type == 3:
-            self.rect = Enemy.enemy3_image.get_rect(center=(int(x), int(y)))
-            cx, cy = 52, 56
+            self.imageoverlay = Enemy.enemy3_image[1]
+            self.rect = Enemy.enemy3_image[0].get_rect(center=(int(x), int(y)))
+            cx, cy = 65, 65
         elif enemy_type == 4:
             self.rect = Enemy.enemy4_image[0].get_rect(center=(int(x), int(y)))
             cx, cy = 60, 60
@@ -241,7 +248,9 @@ class Enemy:
         elif self.type == 2:
             screen.blit(Enemy.enemy2_image, self.rect)
         elif self.type == 3:
-            screen.blit(Enemy.enemy3_image, self.rect)
+            screen.blit(Enemy.enemy3_image[0], self.rect)
+            self.imageoverlay.set_alpha(255 - int(255 * self.hitpoints / self.maxhp))
+            screen.blit(self.imageoverlay, self.rect)
         elif self.type == 4:
             self.frame += 0.2
             screen.blit(Enemy.enemy4_image[int(self.frame) % 12], self.rect)
@@ -427,7 +436,8 @@ while running:
         for enemy in enemies[:]:
             if bullet.rect.colliderect(enemy.collision_rect):
                 enemy.hitpoints -= 1
-                bullets.remove(bullet)
+                if bullet in bullets:
+                    bullets.remove(bullet)
                 if enemy.hitpoints <= 0:
                     enemy.destroy()
                     enemies.remove(enemy)
