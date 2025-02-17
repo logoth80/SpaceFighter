@@ -162,7 +162,6 @@ class Meteor:
     def draw(self):
         screen.blit(self.image, self.rect)
         screen.blit(self.image_over, self.rect)
-
         # pygame.draw.rect(screen, (0, 255, 0), self.collision_rect, 2)
 
 
@@ -179,7 +178,7 @@ class Enemy:
     enemy3_image[0] = pygame.transform.scale(enemy3_image[0], (75, 75))
     enemy3_image.append(pygame.image.load("assets\\enemy_3_9.png").convert_alpha())
     enemy3_image[1] = pygame.transform.scale(enemy3_image[1], (75, 75))
-    enemy3_image[1].set_alpha(255)
+    enemy3_image[1].set_alpha(0)
 
     enemy4_image = []
     for i in range(12):
